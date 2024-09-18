@@ -1,0 +1,105 @@
+/* General Styles */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #72a5f3;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    color: #333;
+}
+
+.login-container {
+    background-color: #ffffff;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.login-container:hover {
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+}
+
+h2 {
+    margin-bottom: 30px;
+    font-size: 28px;
+    color: #333;
+    font-weight: 500;
+}
+
+.form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.form-group label {
+    font-size: 14px;
+    font-weight: 600;
+    color: #555;
+}
+
+.form-control {
+    width: 100%;
+    padding: 14px;
+    margin-top: 8px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+    transition: border-color 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    outline: none;
+}
+
+.btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background-color 0.3s ease;
+    margin-top: 10px;
+}
+
+.btn:hover {
+    background-color: #0056b3;
+}
+
+.alert {
+    color: #d9534f;
+    font-size: 14px;
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #f8d7da;
+    border-radius: 6px;
+}
+
+.form-control::placeholder {
+    color: #aaa;
+}
+
+/* Optional subtle animations */
+input, button {
+    transition: all 0.3s ease;
+}
+
+input:focus {
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.2);
+}
+
+button:active {
+    transform: scale(0.98);
+}
+

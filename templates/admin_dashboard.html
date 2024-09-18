@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="main-content">
+    <h2>Welcome to the Timetable Scheduling System</h2>
+    <p>Quick glance at your schedule:</p>
+
+    <!-- Upcoming Events Section -->
+    <div class="upcoming-events">
+        <h3>Upcoming Events</h3>
+        <ul>
+            {% for event in events %}
+                <li>{{ event.event }} - {{ event.time }} on {{ event.date }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Quick Actions Section -->
+    <div class="quick-actions">
+        <a href="/create" class="btn">Create Timetable</a>
+        <a href="/view" class="btn">View Timetables</a>
+    </div>
+</div>
+{% endblock %}

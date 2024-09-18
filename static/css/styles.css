@@ -1,0 +1,73 @@
+/* Basic styling */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+    margin: 0;
+    padding: 0;
+}
+
+.wrapper {
+    display: flex;
+}
+
+/* Sidebar styles */
+#sidebar {
+    padding-top: 30px;
+    width: 250px;
+    height: 100vh;
+    background: #343a40;
+    color: #fff;
+    position: fixed;
+    transition: all 0.3s ease;
+}
+
+#sidebar.collapsed {
+    margin-left: -250px;
+}
+
+#content {
+    width: calc(100% - 250px);
+    margin-left: 250px;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+#content.fullwidth {
+    width: 100%;
+    margin-left: 0;
+}
+
+/* Other styles */
+.card {
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.card:hover {
+    transform: scale(1.05);
+    transition: all 0.3s ease;
+}
+
+.clickable-card:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Table styles */
+table {
+    background-color: #ffffff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+th, td {
+    text-align: center;
+    padding: 12px;
+}
+
+/* Modal styling */
+.modal-header {
+    background-color: #28a745;
+    color: white;
+}

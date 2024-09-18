@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timetable Scheduler</title>
+    
+    <!-- Bootstrap CSS for styling -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="wrapper d-flex">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="bg-dark">
+            <div class="sidebar-header text-white text-center">
+                <h4>Timetable Scheduler</h4>
+            </div>
+            <ul class="list-unstyled components">
+                <li><a href="/admin" class="text-white">Dashboard</a></li><br>
+                <li><a href="/timetable" class="text-white">Timetable Generation</a></li><br>
+                <li><a href="/rooms" class="text-white">Rooms</a></li><br>
+                <li><a href="/lecturers" class="text-white">Lecturer List</a></li><br>
+                <li><a href="/courses" class="text-white">Course List</a></li><br>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div id="content" class="p-4">
+            <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                <button class="btn btn-dark" id="sidebarCollapse">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </nav>
+            <div class="container-fluid">
+                {% block content %}{% endblock %}
+            </div>
+        </div>
+    </div>
+
+   <!-- Bootstrap CSS and JS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    
+    <script src="{{ url_for('static', filename='js/sidebar.js') }}"></script>
+</body>
+</html>

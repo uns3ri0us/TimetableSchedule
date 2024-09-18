@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-center">Rooms</h2>
+
+    <!-- Add Room Button -->
+    <div class="d-flex justify-content-end mb-4">
+        <button class="btn btn-success" data-toggle="modal" data-target="#addRoomModal">Add Room</button>
+    </div>
+
+    <!-- Room List Table -->
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Room Name</th>
+                <th>Capacity</th>
+                <th>Room Type</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for room in rooms %}
+            <tr>
+                <td>{{ room.room_name }}</td>
+                <td>{{ room.capacity }}</td>
+                <td>{{ room.room_type }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal for Adding Room -->
+<div class="modal fade" id="addRoomModal" tabindex="-1" role="dialog" aria-labelledby="addRoomModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('add_room') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addRoomModalLabel">Add Room</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label for="room_name">Room Name</label>
+                        <input type="text" class="form-control" id="room_name" name="room_name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="capacity">Capacity</label>
+                        <input type="number" class="form-control" id="capacity" name="capacity" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="location">Room Type</label>
+                        <input type="text" class="form-control" id="room_type" name="room_type" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Add Room</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
