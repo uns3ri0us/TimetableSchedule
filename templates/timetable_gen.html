@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h3>Select Courses for Timetable Generation</h3>
+    <form action="/admintimetable" method="POST">
+        <div class="form-group">
+            <label>Select Courses:</label>
+            <select multiple class="form-control" name="courses[]" required>
+                {% for course in available_courses %}
+                <option value="{{ course._id }}">{{ course.course_name }} ({{ course.course_code }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        <button type="submit" class="btn btn-primary">Generate Timetable</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container mt-5">
+    <h2>Register a New User</h2>
+
+    <!-- Display flash messages -->
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <div class="alert alert-success">{{ messages[0] }}</div>
+        {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('register') }}">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <input type="text" class="form-control" name="username" required>
+        </div>
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" class="form-control" name="email" required>
+        </div>
+        <div class="form-group">
+            <label for="role">Role</label>
+            <select class="form-control" name="role" id="role" required>
+                <option value="admin">Admin</option>
+                <option value="lecturer">Lecturer</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="department">Department</label>
+            <input type="department" class="form-control" name="department">
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" class="form-control" name="password" required>
+        </div>
+
+        <!-- Availability fields (only visible for lecturers) -->
+        <div id="availability-fields" class="form-group" style="display: none;">
+            <h5>Lecturer Availability(in 24 hour form)</h5>
+            <label for="monday">Monday</label>
+            <input type="text" name="monday" class="form-control" placeholder="e.g., 9:00-11:00">
+
+            <label for="tuesday">Tuesday</label>
+            <input type="text" name="thursday" class="form-control" placeholder="e.g., 9:00-11:00">
+
+            <label for="wednesday">Wednesday</label>
+            <input type="text" name="wednesday" class="form-control" placeholder="e.g., 9:00-11:00">
+
+            <label for="thursday">Thursday</label>
+            <input type="text" name="thursday" class="form-control" placeholder="e.g., 9:00-11:00">
+
+            <label for="friday">Friday</label>
+            <input type="text" name="friday" class="form-control" placeholder="e.g., 9:00-11:00">
+        </div>
+
+        <button type="submit" class="btn btn-primary mt-3">Register</button>
+    </form>
+</div>
+
+<script>
+    // Show/Hide Availability Fields based on Role Selection
+    document.getElementById('role').addEventListener('change', function() {
+        var availabilityFields = document.getElementById('availability-fields');
+        if (this.value === 'lecturer') {
+            availabilityFields.style.display = 'block';
+        } else {
+            availabilityFields.style.display = 'none';
+        }
+    });
+</script>
+</body>
+</html>

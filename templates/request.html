@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2 class="my-4">Manage Lecturer Requests</h2>
+
+    <!-- Check if there are any requests -->
+    {% if requests|length == 0 %}
+        <div class="alert alert-info" role="alert">
+            No pending requests.
+        </div>
+    {% else %}
+        <!-- Container to display all requests -->
+        <div class="request-container">
+            {% for request in requests %}
+            <div class="request-box border p-3 mb-4">
+                <h5>Lecturer Name: {{ request.lecturer_name }}</h5>
+                <p><strong>Reason for Replacement:</strong> {{ request.reason }}</p>
+                <p><strong>Replacement Type:</strong> {{ request.replacement_type }}</p>
+
+                <!-- If the replacement is temporary, show the specific date -->
+                {% if request.replacement_type == 'temporary' %}
+                <p><strong>Specific Date:</strong> {{ request.specific_date }}</p>
+                {% endif %}
+
+                <p><strong>Desired Venue:</strong> {{ request.venue }}</p>
+                <p><strong>Desired Time Slot:</strong> {{ request.timeslot }}</p>
+
+                <!-- Accept and Reject Buttons -->
+                <div class="d-flex justify-content-end">
+                    <button class="btn btn-success mr-2" onclick="acceptRequest('{{ request.id }}')">Accept</button>
+                    <button class="btn btn-danger" onclick="rejectRequest('{{ request.id }}')">Reject</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <!-- Reject Modal (hidden by default) -->
+    <div class="modal" id="rejectModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Reject Request</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <form id="rejectForm" method="POST">
+                        <input type="hidden" id="requestId" name="requestId" value="">
+                        <div class="form-group">
+                            <label for="rejectReason">Reason for Rejection:</label>
+                            <textarea id="rejectReason" name="rejectReason" class="form-control" rows="3" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-danger">Submit</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript for handling accept/reject actions -->
+    <script>
+        function acceptRequest(requestId) {
+            // Send accept request to the server via AJAX
+            $.ajax({
+                url: '/admin/accept_request/' + requestId,
+                type: 'POST',
+                success: function(response) {
+                    alert('Request accepted successfully!');
+                    location.reload();  // Reload the page to reflect changes
+                },
+                error: function(error) {
+                    alert('Error accepting the request. Please try again.');
+                }
+            });
+        }
+
+        function rejectRequest(requestId) {
+            // Store the request ID in the hidden input and show the modal
+            $('#requestId').val(requestId);
+            $('#rejectModal').modal('show');
+        }
+
+        // Handle the submission of the reject form
+        $('#rejectForm').submit(function(event) {
+            event.preventDefault();
+
+            var requestId = $('#requestId').val();
+            var rejectReason = $('#rejectReason').val();
+
+            // Send rejection request to the server via AJAX
+            $.ajax({
+                url: '/admin/reject_request/' + requestId,
+                type: 'POST',
+                data: {
+                    rejectReason: rejectReason
+                },
+                success: function(response) {
+                    alert('Request rejected successfully!');
+                    $('#rejectModal').modal('hide');
+                    location.reload();  // Reload the page to reflect changes
+                },
+                error: function(error) {
+                    alert('Error rejecting the request. Please try again.');
+                }
+            });
+        });
+    </script>
+
+    <!-- CSS for Request Boxes -->
+    <style>
+        .request-box {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        .request-box h5 {
+            margin-bottom: 10px;
+        }
+    </style>
+{% endblock %}

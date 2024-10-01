@@ -1,0 +1,35 @@
+{% extends "lecturer_base.html" %}
+
+{% block content %}
+    <div class="container">
+        <h2 class="mb-4">Assigned Courses</h2>
+
+        <!-- Check if there are courses assigned to the lecturer -->
+        {% if courses %}
+            <table class="table table-striped table-bordered">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Course Code</th>
+                        <th>Course Name</th>
+                        <th>Credit Hours</th>
+                        <th>Lab Hours</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for course in courses %}
+                    <tr>
+                        <td>{{ course.course_code }}</td>
+                        <td>{{ course.course_name }}</td>
+                        <td>{{ course.credit_hours }}</td>
+                        <td>{{ course.lab_hours }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <div class="alert alert-warning" role="alert">
+                No courses assigned to you at the moment.
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

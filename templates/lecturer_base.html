@@ -21,16 +21,14 @@
                 <h4>Timetable Scheduler</h4>
             </div>
             <ul class="list-unstyled components">
-                <li><a href="/admin" class="text-white">Dashboard</a></li><br>
-                <li><a href="/admintimetable" class="text-white">Timetable Generation</a></li><br>
-                <li><a href="/adminrooms" class="text-white">Rooms</a></li><br>
-                <li><a href="/lecturerlist" class="text-white">Lecturer List</a></li><br>
-                <li><a href="/courselist" class="text-white">Course List</a></li><br>
-                <li><a href="/request" class="text-white">Lecturer Requests</a></li><br>
+                <li><a href="/lecturer" class="text-white">Dashboard</a></li><br>
+                <li><a href="/lecturertimetable" class="text-white">View Timetable</a></li><br>
+                <li><a href="/lecturercourse" class="text-white">View Course</a></li><br>
+                <li><a href="/lecturerrequest" class="text-white">Replacement Request</a></li><br>
             </ul>
             <!-- Logout button at the bottom -->
             <div class="logout-btn">
-                <a href="{{ url_for('logout') }}" class="btn btn-danger">Logout</a>
+                <a href="/logout" class="btn btn-danger">Logout</a>
             </div>
         </nav>
 

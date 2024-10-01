@@ -18,6 +18,8 @@
                 <th>Lecturer</th>
                 <th>Credit Hours</th>
                 <th>Lab Hours</th>
+                <th>Student Count</th>
+                <th>Department</th>
             </tr>
         </thead>
         <tbody>
@@ -28,6 +30,8 @@
                 <td>{{ course.lecturer }}</td>
                 <td>{{ course.credit_hours }}</td>
                 <td>{{ course.lab_hours }}</td>
+                <td>{{ course.student_count }}</td>
+                <td>{{ course.department }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -58,7 +62,7 @@
                         <label for="lecturer">Lecturer</label>
                         <select class="form-control" id="lecturer" name="lecturer" required>
                             {% for lecturer in lecturers %}
-                            <option value="{{ lecturer.name }}">{{ lecturer.name }}</option>
+                            <option value="{{ lecturer.username }}">{{ lecturer.username }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -69,6 +73,14 @@
                     <div class="form-group">
                         <label for="lab_hours">Lab Hours (Optional)</label>
                         <input type="number" class="form-control" id="lab_hours" name="lab_hours">
+                    </div>
+                    <div class="form-group">
+                        <label for="student_count">Student Count</label>
+                        <input type="number" class="form-control" id="student_count" name="student_count">
+                    </div>
+                    <div class="form-group">
+                        <label for="department">Department</label>
+                        <input type="text" class="form-control" id="department" name="department">
                     </div>
                 </div>
                 <div class="modal-footer">

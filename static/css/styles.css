@@ -1,24 +1,31 @@
 /* Basic styling */
-body {
+body, html {
     font-family: Arial, sans-serif;
     background-color: #f8f9fa;
     margin: 0;
     padding: 0;
+    height: 100%;
 }
 
+/* Wrapper for sidebar and content */
 .wrapper {
     display: flex;
+    height: 100vh; /* Full viewport height */
 }
 
 /* Sidebar styles */
 #sidebar {
-    padding-top: 30px;
+    display: flex;
+    flex-direction: column; /* Allows for the logout button to stay at the bottom */
     width: 250px;
-    height: 100vh;
+    height: 100%;
     background: #343a40;
     color: #fff;
     position: fixed;
-    transition: all 0.3s ease;
+    left: 0;
+    top: 0;
+    transition: margin-left 0.3s ease;
+    padding-top: 30px;
 }
 
 #sidebar.collapsed {
@@ -26,15 +33,58 @@ body {
 }
 
 #content {
-    width: calc(100% - 250px);
-    margin-left: 250px;
+    flex-grow: 1;
+    margin-left: 250px; /* Sidebar width */
     padding: 20px;
-    transition: all 0.3s ease;
+    transition: margin-left 0.3s ease;
 }
 
 #content.fullwidth {
-    width: 100%;
     margin-left: 0;
+}
+
+/* Sidebar styling */
+.sidebar-menu {
+    flex-grow: 1; /* Pushes the logout button down */
+}
+
+.sidebar-list {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.sidebar-list li {
+    margin: 10px 0;
+}
+
+.sidebar-list a {
+    text-decoration: none;
+    color: white;
+    font-weight: bold;
+}
+
+.sidebar-list a:hover {
+    color: #f8f9fa;
+}
+
+/* Logout button styling */
+.logout-btn {
+    margin-top: auto;  /* Ensures this section is pushed to the bottom */
+}
+
+.logout-btn a {
+    color: white;
+    background-color: #dc3545;
+    padding: 10px 20px;
+    text-align: center;
+    display: block;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+.logout-btn a:hover {
+    background-color: #c82333;
 }
 
 /* Other styles */
@@ -71,3 +121,5 @@ th, td {
     background-color: #28a745;
     color: white;
 }
+
+

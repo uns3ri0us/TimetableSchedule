@@ -1,241 +1,167 @@
 import pygad
 import numpy as np
+from flask import session
+from pymongo import MongoClient
+from database import courses_collection, users_collection, rooms_collection, timetable_collection  # Import collections
 
-class GeneticAlgorithm:
-    def __init__(self, courses, lecturers, rooms, population_size=50, generations=1000, mutation_rate=0.1, crossover_rate=0.8, elitism_count=2):
-        self.courses = courses
-        self.lecturers = lecturers
-        self.rooms = rooms
-        self.population_size = population_size
-        self.generations = generations
-        self.mutation_rate = mutation_rate
-        self.crossover_rate = crossover_rate
-        self.elitism_count = elitism_count
-        self.time_slots = [f"{day}-{hour}" for day in DAYS for hour in HOURS]
-        self.num_genes = len(courses) * 2  # For each course: time slot and room
+# Fetch courses and lecturer availability
+def fetch_data():
+    courses_data = list(courses_collection.find())  # Fetch new semester courses
+    lecturer_data = list(users_collection.find({'role': 'lecturer'}))  # Fetch only lecturers
+    room_data = list(rooms_collection.find())  # Fetch all rooms
+    return courses_data, lecturer_data, room_data
 
-    def fitness_function(self, solution, solution_idx):
-        timetable = self.decode_chromosome(solution)
-        return self.fitness(timetable)
+# Extract course names and number of courses
+courses_data, lecturer_data, room_data = fetch_data()
+courses = [course['course_name'] for course in courses_data]
+num_courses = len(courses)
 
-    def run(self):
-        ga_instance = pygad.GA(
-            num_generations=self.generations,
-            num_parents_mating=self.population_size // 2,
-            fitness_func=self.fitness_function,
-            sol_per_pop=self.population_size,
-            num_genes=self.num_genes,
-            mutation_percent_genes=self.mutation_rate * 100,
-            crossover_probability=self.crossover_rate,
-            gene_type=int,  # Genes will be integers representing indices of time slots and rooms
-            on_generation=self.callback_generation
-        )
-        ga_instance.run()
-
-        # Get the best solution after the GA has run
-        best_solution, best_solution_fitness, _ = ga_instance.best_solution()
-        best_timetable = self.decode_chromosome(best_solution)
-
-        print(f"Best Fitness: {best_solution_fitness}")
-        return best_timetable, best_solution_fitness
-
-    def callback_generation(self, ga_instance):
-        print(f"Generation {ga_instance.generations_completed}: Best Fitness = {ga_instance.best_solution()[1]}")
-
-    def initialize_population(self):
-        # PyGAD handles population initialization, so this is no longer needed
-        pass
-
-    def decode_chromosome(self, chromosome):
-        """
-        Convert a chromosome (array of integers) back to a timetable. 
-        Each course is represented by two consecutive genes: time slot and room.
-        """
-        timetable = []
-        for i, course in enumerate(self.courses):
-            time_idx = chromosome[2 * i]
-            room_idx = chromosome[2 * i + 1]
-            time = self.time_slots[time_idx]
-            room = list(self.rooms.keys())[room_idx]
-
-            assignment = {
-                'course': course['course_name'],
-                'lecturer': course['lecturer_name'],
-                'room': room,
-                'time': time
-            }
-            timetable.append(assignment)
-        return timetable
-
-    def fitness(self, timetable):
-        score = 0
-        lecturer_schedule = {}
-        room_schedule = {}
-        for assignment in timetable:
-            course = next((c for c in self.courses if c['course_name'] == assignment['course']), None)
-            if not course:
-                continue
-            lecturer = assignment['lecturer']
-            room = assignment['room']
-            time = assignment['time']
-            # Check lecturer availability
-            if time in self.lecturers[lecturer]['available_times']:
-                score += 1
-            # Check room capacity
-            if self.rooms[room]['capacity'] >= course['credit_hours']:
-                score += 1
-            # Check room type
-            if self.rooms[room]['room_type'] == course['room_type']:
-                score += 1
-            # Avoid lecturer conflicts
-            lecturer_conflicts = lecturer_schedule.get(lecturer, set())
-            if time not in lecturer_conflicts:
-                score += 1
-                lecturer_conflicts.add(time)
-                lecturer_schedule[lecturer] = lecturer_conflicts
-            # Avoid room conflicts
-            room_conflicts = room_schedule.get(room, set())
-            if time not in room_conflicts:
-                score += 1
-                room_conflicts.add(time)
-                room_schedule[room] = room_conflicts
-        return score
-
-    def max_fitness(self):
-        return len(self.courses) * 5
-
-
-class TimetableSystem(cmd.Cmd):
-    intro = 'Welcome to the Timetable System. Type help or ? to list commands.\n'
-    prompt = '(timetable) '
-
-    def __init__(self):
-        super().__init__()
-        self.lecturers = {}
-        self.rooms = {}
-        self.courses = []
-        self.population_size = 50
-        self.generations = 1000
-        self.mutation_rate = 0.1
-        self.crossover_rate = 0.8
-        self.elitism_count = 2
-
-    def do_add_lecturer(self, arg):
-        "Add a new lecturer with available times: add_lecturer [name] [available_times (e.g. Mon-8-12,Tue-9-11)]"
-        args = arg.split()
-        if len(args) < 2:
-            print("Please provide the name of the lecturer and their available times.")
-            return
+def create_initial_population(pop_size, courses_data, num_time_slots):
+    population = []
+    for _ in range(pop_size):
+        individual = [-1] * num_time_slots  # Initialize with empty slots (-1 means no course)
         
-        name = args[0]
-        time_ranges = args[1].split(',')
-        available_times = []
-
-        for time_range in time_ranges:
-            day, hours = time_range.split('-', 1)
-            start_hour, end_hour = map(int, hours.split('-'))
-            for hour in range(start_hour, end_hour):
-                available_times.append(f"{day}-{hour}")
-
-        self.lecturers[name] = {
-            'available_times': available_times
-        }
-        print(f"Lecturer '{name}' added with available times: {available_times}.")
-
+        # Assign each course to a number of slots equal to its credit hours
+        for course_idx, course in enumerate(courses_data):
+            credit_hours = course['credit_hours']
+            
+            # Randomly assign the course to available time slots
+            available_slots = np.random.choice(range(num_time_slots), size=credit_hours, replace=False)
+            for slot in available_slots:
+                individual[slot] = course_idx  # Assign course index to this time slot
+        
+        population.append(individual)
     
-    def do_add_room(self, arg):
-        "Add a new room with capacity and type: add_room [room_number] [capacity] [room_type (e.g. Lecture, Lab)]"
-        args = arg.split()
-        if len(args) != 3:
-            print("Please provide the room number, capacity, and room type.")
-            return
+    return population
+
+# Lecturer availability (transform availability into time slots)
+def get_lecturer_availability(lecturer):
+    availability = lecturer.get('availability', {})
+    available_slots = []
+    days_mapping = {"monday": 1, "tuesday": 2, "wednesday": 3, "thursday": 4, "friday": 5}
+
+    for day, times in availability.items():
+        if day in days_mapping:
+            day_index = days_mapping[day]
+            if isinstance(times, str):
+                try:
+                    start_time, end_time = map(lambda t: int(t.split(":")[0]), times.split("-"))
+                    for hour in range(start_time, end_time):
+                        slot_index = (day_index - 1) * 9 + hour - 8
+                        available_slots.append(slot_index)
+                except ValueError:
+                    print(f"Error parsing time for lecturer {lecturer['username']} on {day}")
+            elif isinstance(times, list):
+                for time_range in times:
+                    try:
+                        start_time, end_time = map(lambda t: int(t.split(":")[0]), time_range.split("-"))
+                        for hour in range(start_time, end_time):
+                            slot_index = (day_index - 1) * 9 + hour - 8
+                            available_slots.append(slot_index)
+                    except ValueError:
+                        print(f"Error parsing time range {time_range} for lecturer {lecturer['username']} on {day}")
+    return available_slots
+
+def fitness_func(ga_instance, solution, solution_idx, lecturer_availability):
+    penalty = 0
+    course_counts = {course['course_name']: 0 for course in courses_data}
+
+    # Check for course overlaps, lecturer availability, and room assignment
+    for slot_idx, course_idx in enumerate(solution):
+        if course_idx == -1:
+            continue  # No course assigned in this time slot
         
-        room_number = args[0]
-        try:
-            capacity = int(args[1])
-        except ValueError:
-            print("Capacity must be an integer.")
-            return
-        room_type = args[2]
-        self.rooms[room_number] = {
-            'capacity': capacity,
-            'room_type': room_type
-        }
-        print(f"Room '{room_number}' added with capacity {capacity} and type '{room_type}'.")
-
-    def do_add_course(self, arg):
-        "Add a new course: add_course [course_name] [lecturer_name] [credit_hours] [room_type]"
-        args = arg.split()
-        if len(args) != 4:
-            print("Please provide course name, lecturer name, credit hours, and room type.")
-            return
+        course_info = courses_data[course_idx]
+        lecturer_name = course_info['lecturer']
+        lecturer_pref = lecturer_availability.get(lecturer_name, [])
         
-        course_name = args[0]
-        lecturer_name = args[1]
-        try:
-            credit_hours = int(args[2])
-        except ValueError:
-            print("Credit hours must be an integer.")
-            return
-        room_type = args[3]
-
-        if lecturer_name not in self.lecturers:
-            print(f"Lecturer '{lecturer_name}' does not exist. Add the lecturer first.")
-            return
-
-        course = {
-            'course_name': course_name,
-            'lecturer_name': lecturer_name,
-            'credit_hours': credit_hours,
-            'room_type': room_type
-        }
-        self.courses.append(course)
-        print(f"Course '{course_name}' added with lecturer '{lecturer_name}', {credit_hours} credit hours, and room type '{room_type}'.")
-
-    def do_view_data(self, arg):
-        "View the list of lecturers, rooms, and courses: view_data"
-        print("\nLecturers:")
-        for lecturer, details in self.lecturers.items():
-            print(f"  - {lecturer} (Available Times: {', '.join(details['available_times'])})")
+        # Check if the lecturer is available in this slot
+        if slot_idx not in lecturer_pref:
+            penalty += 5  # Penalize if lecturer is not available
         
-        print("\nRooms:")
-        for room, details in self.rooms.items():
-            print(f"  - {room} (Capacity: {details['capacity']}, Type: {details['room_type']})")
+        # Count how many times each course is scheduled
+        course_counts[course_info['course_name']] += 1
+    
+    # Apply penalties for courses not matching their credit hours
+    for course in courses_data:
+        course_name = course['course_name']
+        scheduled_hours = course_counts[course_name]
+        required_hours = course['credit_hours']
         
-        print("\nCourses:")
-        for course in self.courses:
-            print(f"  - {course['course_name']} (Lecturer: {course['lecturer_name']}, Credit Hours: {course['credit_hours']}, Room Type: {course['room_type']})")
-
-    def do_generate_timetable(self, arg):
-        "Generate a timetable using genetic algorithm: generate_timetable"
-        if not self.courses or not self.lecturers or not self.rooms:
-            print("Please make sure to add courses, lecturers, and rooms before generating the timetable.")
-            return
+        if scheduled_hours < required_hours:
+            penalty += (required_hours - scheduled_hours) * 5  # Penalize for under-scheduling
+        elif scheduled_hours > required_hours:
+            penalty += (scheduled_hours - required_hours) * 5  # Penalize for over-scheduling
+    
+    # Room assignment and capacity checking (same as before)
+    for slot_idx, course_idx in enumerate(solution):
+        if course_idx == -1:
+            continue
         
-        ga = GeneticAlgorithm(self.courses, self.lecturers, self.rooms, self.population_size, self.generations, self.mutation_rate, self.crossover_rate, self.elitism_count)
-        best_timetable, fitness = ga.run()
-        self.display_timetable(best_timetable)
-
-    def display_timetable(self, timetable):
-        organized = {day: {hour: "Free" for hour in HOURS} for day in DAYS}
+        course_info = courses_data[course_idx]
+        student_count = course_info['student_count']
+        assigned_room = room_data[slot_idx % len(room_data)]
+        room_capacity = assigned_room['capacity']
         
-        for assignment in timetable:
-            day, hour = assignment['time'].split('-')
-            hour = int(hour)
-            organized[day][hour] = f"{assignment['course']} ({assignment['lecturer']}, {assignment['room']})"
+        if student_count > room_capacity:
+            penalty += 10  # Penalize if room is too small
+    
+    return 1 / (1 + penalty)
+
+# Genetic Algorithm configuration
+def run_genetic_algorithm(courses_data, lecturer_data, room_data):
+    courses = [course['course_name'] for course in courses_data]
+    num_courses = len(courses)
+    num_time_slots = 45  # 9 time slots per day * 5 days
+    
+    # Create lecturer availability dictionary
+    lecturer_availability = {lecturer['username']: get_lecturer_availability(lecturer) for lecturer in lecturer_data}
+
+    # Define a wrapper fitness function to pass lecturer_availability
+    def fitness_wrapper(ga_instance, solution, solution_idx):
+        return fitness_func(ga_instance, solution, solution_idx, lecturer_availability)
+
+    # Genetic Algorithm configuration
+    ga = pygad.GA(num_generations=100,
+              num_parents_mating=10,
+              fitness_func=fitness_wrapper,  # Pass the wrapped fitness function
+              sol_per_pop=20,
+              num_genes=num_time_slots,
+              gene_type=int,
+              init_range_low=0,
+              init_range_high=num_courses-1,
+              parent_selection_type="rank",
+              keep_parents=1,
+              crossover_probability=0.9,
+              mutation_probability=0.1)
+    
+    # Run the genetic algorithm
+    ga.run()
+
+    # Retrieve the best solution found by the GA
+    solution, fitness, _ = ga.best_solution()
+    
+    # Return the best timetable and its fitness score
+    return solution, fitness
+
+# Function to generate the detailed timetable based on the GA solution
+def generate_detailed_timetable(solution, courses_data, room_data):
+    detailed_timetable = []
+    
+    for slot_idx, course_idx in enumerate(solution):
+        course_info = courses_data[course_idx]
+        assigned_room = room_data[slot_idx % len(room_data)]
+        room_name = assigned_room['room_name']
         
-        print("\nGenerated Timetable:")
-        for day in DAYS:
-            print(f"\n{day}:")
-            for hour in HOURS:
-                course = organized[day][hour]
-                print(f"  {hour}:00 - {course}")
+        day = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"][slot_idx // 9]
+        time_slot = f"{8 + (slot_idx % 9)}:00 - {9 + (slot_idx % 9)}:00"
 
-    def do_exit(self, arg):
-        "Exit the timetable system: exit"
-        print("Exiting the Timetable System.")
-        return True
+        timetable_collection.insert_one({
+            "course": course_info['course_name'],
+            "lecturer": course_info['lecturer'],
+            "room": room_name,
+            "day": day,
+            "time": time_slot
+        })
 
-
-if __name__ == '__main__':
-    TimetableSystem().cmdloop()
+    return detailed_timetable

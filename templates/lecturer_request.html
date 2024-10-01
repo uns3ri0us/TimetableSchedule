@@ -1,0 +1,164 @@
+{% extends "lecturer_base.html" %}
+
+{% block content %}
+    <h2 class="my-4">Request Replacement</h2>
+
+    <!-- Form Section -->
+    <form id="replacementForm" method="POST" action="/submit_replacement">
+        <div class="form-group">
+            <label for="reason">Reason for Replacement and Desired Replacement Date(If Applicable):</label>
+            <textarea id="reason" name="reason" class="form-control" rows="4" required></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="venue">Preferred Venue:</label>
+            <select id="venue" name="venue" class="form-control" required>
+                <option value="">Select a venue</option>
+                <option value="Lecture Hall 1">Lecture Hall 1</option>
+                <option value="Lab A">Lab A</option>
+                <option value="Classroom 3">Classroom 3</option>
+                <!-- Add more venues as needed -->
+            </select>
+        </div>
+
+        <!-- New: Radio Buttons for Temporary or Permanent Replacement -->
+        <div class="form-group">
+            <label for="replacementType">Replacement Type:</label><br>
+            <input type="radio" id="temporary" name="replacementType" value="temporary" required>
+            <label for="temporary">Temporary (Specific Date)</label><br>
+            <input type="radio" id="permanent" name="replacementType" value="permanent" required>
+            <label for="permanent">Permanent (Shift to New Timeslot)</label>
+        </div>
+
+        <!-- Date Field (only if Temporary Replacement is chosen) -->
+        <div class="form-group" id="dateField" style="display: none;">
+            <label for="specificDate">Select Date for Temporary Replacement:</label>
+            <input type="date" id="specificDate" name="specificDate" class="form-control">
+        </div>
+
+        <!-- Timetable Table for selecting replacement time slots -->
+        <div class="container">
+            <h5>Select Preferred Time Slot for Replacement</h5>
+            <table id="replacementTimetable" class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>08:00</th>
+                        <th>09:00</th>
+                        <th>10:00</th>
+                        <th>11:00</th>
+                        <th>12:00</th>
+                        <th>13:00</th>
+                        <th>14:00</th>
+                        <th>15:00</th>
+                        <th>16:00</th>
+                        <th>17:00</th>
+                        <th>18:00</th>
+                        <th>19:00</th>
+                        <th>20:00</th>
+                        <th>21:00</th>
+                        <th>22:00</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th>Mon</th>
+                        <td></td><td></td><td></td><td></td><td></td><td></td>
+                        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                    </tr>
+                    <tr>
+                        <th>Tue</th>
+                        <td></td><td></td><td></td><td></td><td></td><td></td>
+                        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                    </tr>
+                    <tr>
+                        <th>Wed</th>
+                        <td></td><td></td><td></td><td></td><td></td><td></td>
+                        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                    </tr>
+                    <tr>
+                        <th>Thu</th>
+                        <td></td><td></td><td></td><td></td><td></td><td></td>
+                        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                    </tr>
+                    <tr>
+                        <th>Fri</th>
+                        <td></td><td></td><td></td><td></td><td></td><td></td>
+                        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                    </tr>
+                    <tr>
+                        <th>Sat</th>
+                        <td></td><td></td><td></td><td></td><td></td><td></td>
+                        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                    </tr>
+                    <tr>
+                        <th>Sun</th>
+                        <td></td><td></td><td></td><td></td><td></td><td></td>
+                        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Submit and Cancel Buttons -->
+        <div class="form-group mt-4">
+            <button type="submit" class="btn btn-primary">Submit</button>
+            <a href="/lecturer" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+
+    <!-- jQuery to handle form, slot selection, and replacement type -->
+    <script>
+        $(document).ready(function() {
+            // Make timetable slots selectable
+            $('#replacementTimetable td').click(function() {
+                $(this).toggleClass('selected');
+            });
+
+            // Show date field if Temporary Replacement is selected
+            $('input[name="replacementType"]').change(function() {
+                if ($(this).val() === 'temporary') {
+                    $('#dateField').show();
+                    $('#specificDate').prop('required', true);
+                } else {
+                    $('#dateField').hide();
+                    $('#specificDate').prop('required', false);
+                }
+            });
+
+            // Handle form submission
+            $('#replacementForm').submit(function(event) {
+                event.preventDefault();  // Prevent default form submission
+
+                // Show alert for request submission
+                alert("Replacement request submitted successfully!");
+
+                // Proceed with form submission after alert
+                this.submit();
+            });
+        });
+    </script>
+
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: center;
+            padding: 20px;
+            border: 1px solid black;
+        }
+        th {
+            background-color: #343a40;
+            color: white;
+        }
+        td.selected {
+            background-color: #007bff;
+            color: white;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+    </style>
+{% endblock %}
