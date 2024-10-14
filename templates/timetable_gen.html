@@ -5,7 +5,7 @@
     <h3>Select Courses for Timetable Generation</h3>
     <form action="/admintimetable" method="POST">
         <div class="form-group">
-            <label>Select Courses:</label>
+            <label>Select Courses(CTRL select all required course):</label>
             <select multiple class="form-control" name="courses[]" required>
                 {% for course in available_courses %}
                 <option value="{{ course._id }}">{{ course.course_name }} ({{ course.course_code }})</option>

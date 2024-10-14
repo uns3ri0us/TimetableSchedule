@@ -2,11 +2,11 @@ import datetime
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_pymongo import PyMongo
 from werkzeug.security import generate_password_hash, check_password_hash
-from algorithm import run_genetic_algorithm, generate_detailed_timetable # Import the separated algorithm
+from algorithm import run_genetic_algorithm, save_timetable_to_db  # Import the separated algorithm
 from bson.objectid import ObjectId  # Ensure you import ObjectId
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"
+app.secret_key = "supersecretkey"  # Subject to change
 
 # Configuring MongoDB
 app.config["MONGO_URI"] = "mongodb://localhost:27017/college_timetable"
@@ -24,18 +24,29 @@ __all__ = ['courses_collection', 'users_collection', 'rooms_collection', 'timeta
 
 @app.before_request
 def check_if_logged_in():
-    restricted_endpoints = ['admin_dashboard', 'lecturer_dashboard', 'room_page', 'course_page', 'lecturer_page']
-    if request.endpoint in restricted_endpoints:
+    # Define all endpoints that are restricted to certain users
+    admin_endpoints = [
+        'admin_dashboard', 'room_page', 'course_page', 
+        'lecturer_page', 'generate_timetable', 'add_room', 
+        'add_course', 'admin_requests'
+    ]
+    lecturer_endpoints = [
+        'lecturer_dashboard', 'lecturer_courses', 
+        'lecturer_timetable', 'request_replacement'
+    ]
+    
+    # Ensure user is logged in for restricted pages
+    if request.endpoint in admin_endpoints + lecturer_endpoints:
         if 'user_id' not in session:
             flash('Please log in to access this page.')
             return redirect(url_for('login'))
         
         # Restrict access to certain pages based on user role
-        if request.endpoint == 'admin_dashboard' and session.get('role') != 'admin':
+        if request.endpoint in admin_endpoints and session.get('role') != 'admin':
             flash('Access denied. Admins only.')
             return redirect(url_for('login'))
         
-        if request.endpoint == 'lecturer_dashboard' and session.get('role') != 'lecturer':
+        if request.endpoint in lecturer_endpoints and session.get('role') != 'lecturer':
             flash('Access denied. Lecturers only.')
             return redirect(url_for('login'))
 
@@ -106,10 +117,10 @@ def generate_timetable():
         room_data = list(rooms_collection.find())
 
         # Run the genetic algorithm with the selected courses
-        timetable_solution, fitness = run_genetic_algorithm(selected_courses, lecturer_data, room_data)
+        timetable_solution, fitness = run_genetic_algorithm()
 
         # Generate the detailed timetable for display and saving
-        detailed_timetable = generate_detailed_timetable(timetable_solution, selected_courses, room_data)
+        detailed_timetable = save_timetable_to_db(timetable_solution, selected_courses, room_data, lecturer_data)
 
         # Save the generated timetable into the database
         timetable_collection.insert_one({
@@ -152,7 +163,7 @@ def add_room():
         flash('Room added successfully!')
     else:
         flash('All fields are required!')
-    
+
     return redirect(url_for('room_page'))
 
 # Course management page (Admin only)
@@ -220,7 +231,7 @@ def lecturer_courses():
 
 @app.route('/request')
 def admin_requests():
-# Ensure the user is logged in and is a lecturer
+    # Ensure the user is logged in and is a lecturer
     if 'user_id' not in session or session.get('role') != 'admin':
         return redirect(url_for('login'))
 
@@ -230,13 +241,15 @@ def admin_requests():
     return render_template('request.html', requests=requests)
 
 
-@app.route('/lecturertimetable')
+@app.route('/lecturertimetable', methods=['GET'])
 def lecturer_timetable():
-    # Ensure the user is logged in and is a lecturer
-    if 'user_id' not in session or session.get('role') != 'lecturer':
-        return redirect(url_for('login'))
-    
-    return render_template('lecturer_timetable.html')
+    lecturer_name = session.get('lecturer_name')  # Get lecturer's name from session
+    timetable = list(timetable_collection.find({"lecturer": lecturer_name}))  # Fetch timetable for the lecturer
+
+    # Print for debugging
+    print("Timetable Data:", timetable)
+
+    return render_template("lecturer_timetable.html", timetable=timetable)
 
 @app.route('/lecturerrequest', methods=['GET', 'POST'])
 def request_replacement():
