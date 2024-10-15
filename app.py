@@ -1,4 +1,7 @@
+from flask import jsonify, request, session, render_template, redirect, flash
+import json
 import datetime
+from datetime import datetime, timedelta
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from flask_pymongo import PyMongo
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -240,6 +243,38 @@ def admin_requests():
     
     return render_template('request.html', requests=requests)
 
+@app.route('/roomstats')
+def room_stats():
+    # Fetch all timetable entries
+    timetable_entries = list(timetable_collection.find())
+
+    # Initialize a dictionary to hold room usage stats
+    room_usage = {}
+
+    # Count bookings per room
+    for entry in timetable_entries:
+        room = entry.get('room')  # Safely get room name
+        if room:  # Check if room is not None or empty
+            if room not in room_usage:
+                room_usage[room] = 0
+            room_usage[room] += 1  # Increment the booking count for the room
+
+    # Prepare data for rendering
+    stats = []
+    total_slots = 45  # Maximum possible slots per week
+    for room, count in room_usage.items():
+        usage_percentage = (count / total_slots) * 100  # Calculate usage percentage
+        stats.append({
+            'room': room,
+            'count': count,
+            'usage_percentage': usage_percentage
+        })
+
+    return render_template('roomstats.html', stats=stats)
+
+
+
+############################################################# LECTURER SIDE ####################################
 
 @app.route('/lecturertimetable', methods=['GET'])
 def lecturer_timetable():
@@ -251,6 +286,39 @@ def lecturer_timetable():
 
     return render_template("lecturer_timetable.html", timetable=timetable)
 
+def generate_time_slots():
+    """Generate hourly time slots from 08:00 to 18:00."""
+    slots = []
+    start = datetime.strptime("08:00", "%H:%M")
+    end = datetime.strptime("18:00", "%H:%M")
+
+    while start < end:
+        next_slot = start + timedelta(hours=1)
+        slots.append(f"{start.strftime('%H:%M')} - {next_slot.strftime('%H:%M')}")
+        start = next_slot
+    return slots
+
+@app.route('/check_availability')
+def check_availability():
+    venue = request.args.get('venue')
+
+    # Fetch all timetable entries for the selected venue
+    booked_slots = timetable_collection.find({"room": venue})
+    
+    if not booked_slots:
+        print(f"No bookings found for room: {venue}")
+
+    # Initialize availability dictionary
+    availability = {day: [] for day in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]}
+
+    # Populate the availability dictionary
+    for slot in booked_slots:
+        day = slot['day']
+        time = slot['time']
+        availability[day].append(time)
+
+    return jsonify(availability)
+
 @app.route('/lecturerrequest', methods=['GET', 'POST'])
 def request_replacement():
     if request.method == 'POST':
@@ -259,27 +327,27 @@ def request_replacement():
         replacement_type = request.form['replacementType']
         specific_date = request.form.get('specificDate') if replacement_type == 'temporary' else None
         venue = request.form['venue']
-        timeslot = request.form['timeslot']
+        timeslots = request.form.getlist('timeslot')
 
-        # Create the request data to store in the database
+        # Store the request data in the database
         request_data = {
             'lecturer_name': lecturer_name,
             'reason': reason,
             'replacement_type': replacement_type,
             'specific_date': specific_date,
             'venue': venue,
-            'timeslot': timeslot,
+            'timeslots': timeslots,
             'status': 'pending',
-            'submitted_at': datetime.datetime.now()
+            'submitted_at': datetime.now()
         }
-
-        # Insert the data into the requests collection
         mongo.db.requests.insert_one(request_data)
 
         flash('Replacement request submitted successfully!', 'success')
         return redirect('/lecturer')
 
-    return render_template('lecturer_request.html')
+    rooms = list(mongo.db.rooms.find())  # Fetch available rooms
+
+    return render_template('lecturer_request.html', rooms=rooms)
 
 if __name__ == '__main__':
     app.run(debug=True)

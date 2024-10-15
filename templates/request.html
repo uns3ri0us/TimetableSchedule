@@ -23,12 +23,21 @@
                 {% endif %}
 
                 <p><strong>Desired Venue:</strong> {{ request.venue }}</p>
-                <p><strong>Desired Time Slot:</strong> {{ request.timeslot }}</p>
+
+                <!-- Display all requested timeslots -->
+                <p><strong>Desired Time Slots:</strong></p>
+                <ul>
+                    {% for slot in request.timeslots %}
+                        <li>{{ slot }}</li>
+                    {% endfor %}
+                </ul>
+
+                <p><strong>Status:</strong> {{ request.status }}</p>
 
                 <!-- Accept and Reject Buttons -->
                 <div class="d-flex justify-content-end">
-                    <button class="btn btn-success mr-2" onclick="acceptRequest('{{ request.id }}')">Accept</button>
-                    <button class="btn btn-danger" onclick="rejectRequest('{{ request.id }}')">Reject</button>
+                    <button class="btn btn-success mr-2" onclick="acceptRequest('{{ request._id }}')">Accept</button>
+                    <button class="btn btn-danger" onclick="rejectRequest('{{ request._id }}')">Reject</button>
                 </div>
             </div>
             {% endfor %}

@@ -3,10 +3,9 @@
 {% block content %}
     <h2 class="my-4">Request Replacement</h2>
 
-    <!-- Form Section -->
-    <form id="replacementForm" method="POST" action="/submit_replacement">
+    <form id="replacementForm" method="POST" action="/lecturerrequest">
         <div class="form-group">
-            <label for="reason">Reason for Replacement and Desired Replacement Date(If Applicable):</label>
+            <label for="reason">Reason for Replacement and Desired Replacement Date:</label>
             <textarea id="reason" name="reason" class="form-control" rows="4" required></textarea>
         </div>
 
@@ -14,151 +13,122 @@
             <label for="venue">Preferred Venue:</label>
             <select id="venue" name="venue" class="form-control" required>
                 <option value="">Select a venue</option>
-                <option value="Lecture Hall 1">Lecture Hall 1</option>
-                <option value="Lab A">Lab A</option>
-                <option value="Classroom 3">Classroom 3</option>
-                <!-- Add more venues as needed -->
+                {% for room in rooms %}
+                    <option value="{{ room.room_name }}">{{ room.room_name }}</option>
+                {% endfor %}
             </select>
         </div>
 
-        <!-- New: Radio Buttons for Temporary or Permanent Replacement -->
         <div class="form-group">
-            <label for="replacementType">Replacement Type:</label><br>
+            <label>Replacement Type:</label><br>
             <input type="radio" id="temporary" name="replacementType" value="temporary" required>
-            <label for="temporary">Temporary (Specific Date)</label><br>
+            <label for="temporary">Temporary</label><br>
             <input type="radio" id="permanent" name="replacementType" value="permanent" required>
-            <label for="permanent">Permanent (Shift to New Timeslot)</label>
+            <label for="permanent">Permanent</label>
         </div>
 
-        <!-- Date Field (only if Temporary Replacement is chosen) -->
         <div class="form-group" id="dateField" style="display: none;">
             <label for="specificDate">Select Date for Temporary Replacement:</label>
             <input type="date" id="specificDate" name="specificDate" class="form-control">
         </div>
 
-        <!-- Timetable Table for selecting replacement time slots -->
-        <div class="container">
-            <h5>Select Preferred Time Slot for Replacement</h5>
-            <table id="replacementTimetable" class="table table-bordered">
+        <div class="form-group mt-3">
+            <button type="button" id="checkAvailability" class="btn btn-info">Check Availability</button>
+        </div>
+
+        <div class="container mt-4">
+            <h5>Available Time Slots</h5>
+            <table class="table table-bordered">
                 <thead>
                     <tr>
                         <th></th>
-                        <th>08:00</th>
-                        <th>09:00</th>
-                        <th>10:00</th>
-                        <th>11:00</th>
-                        <th>12:00</th>
-                        <th>13:00</th>
-                        <th>14:00</th>
-                        <th>15:00</th>
-                        <th>16:00</th>
-                        <th>17:00</th>
-                        <th>18:00</th>
-                        <th>19:00</th>
-                        <th>20:00</th>
-                        <th>21:00</th>
-                        <th>22:00</th>
+                        {% for hour in range(8, 19) %}
+                            <th>{{ hour }}:00</th>
+                        {% endfor %}
                     </tr>
                 </thead>
-                <tbody>
-                    <tr>
-                        <th>Mon</th>
-                        <td></td><td></td><td></td><td></td><td></td><td></td>
-                        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
-                    </tr>
-                    <tr>
-                        <th>Tue</th>
-                        <td></td><td></td><td></td><td></td><td></td><td></td>
-                        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
-                    </tr>
-                    <tr>
-                        <th>Wed</th>
-                        <td></td><td></td><td></td><td></td><td></td><td></td>
-                        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
-                    </tr>
-                    <tr>
-                        <th>Thu</th>
-                        <td></td><td></td><td></td><td></td><td></td><td></td>
-                        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
-                    </tr>
-                    <tr>
-                        <th>Fri</th>
-                        <td></td><td></td><td></td><td></td><td></td><td></td>
-                        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
-                    </tr>
-                    <tr>
-                        <th>Sat</th>
-                        <td></td><td></td><td></td><td></td><td></td><td></td>
-                        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
-                    </tr>
-                    <tr>
-                        <th>Sun</th>
-                        <td></td><td></td><td></td><td></td><td></td><td></td>
-                        <td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
-                    </tr>
+                <tbody id="availabilityBody">
+                    {% for day in ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] %}
+                        <tr>
+                            <th>{{ day }}</th>
+                            {% for hour in range(8, 18) %}
+                                <td><span>N/A</span></td>  <!-- Default state -->
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
 
-        <!-- Submit and Cancel Buttons -->
         <div class="form-group mt-4">
             <button type="submit" class="btn btn-primary">Submit</button>
             <a href="/lecturer" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
 
-    <!-- jQuery to handle form, slot selection, and replacement type -->
     <script>
-        $(document).ready(function() {
-            // Make timetable slots selectable
-            $('#replacementTimetable td').click(function() {
-                $(this).toggleClass('selected');
-            });
+        document.addEventListener('DOMContentLoaded', function () {
+            const checkButton = document.getElementById('checkAvailability');
+            const venueSelect = document.getElementById('venue');
+            const dateField = document.getElementById('specificDate');
+            const availabilityBody = document.getElementById('availabilityBody');
 
-            // Show date field if Temporary Replacement is selected
-            $('input[name="replacementType"]').change(function() {
-                if ($(this).val() === 'temporary') {
-                    $('#dateField').show();
-                    $('#specificDate').prop('required', true);
-                } else {
-                    $('#dateField').hide();
-                    $('#specificDate').prop('required', false);
+            // Check Availability on button click
+            checkButton.addEventListener('click', function () {
+                const venue = venueSelect.value;
+                const date = dateField.value;
+
+                if (!venue) {
+                    alert('Please select a venue.');
+                    return;
                 }
+
+                // Fetch availability data via AJAX
+                fetch(`/check_availability?venue=${venue}&date=${date}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);  // Log the data to verify it
+                    updateAvailability(data);
+                })
+                .catch(error => console.error('Error fetching availability:', error));
             });
 
-            // Handle form submission
-            $('#replacementForm').submit(function(event) {
-                event.preventDefault();  // Prevent default form submission
+            // Update the table with availability data
+            function updateAvailability(availability) {
+                availabilityBody.innerHTML = '';  // Clear existing rows
 
-                // Show alert for request submission
-                alert("Replacement request submitted successfully!");
+                const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-                // Proceed with form submission after alert
-                this.submit();
-            });
+                days.forEach(day => {
+                    const row = document.createElement('tr');
+                    const dayCell = document.createElement('th');
+                    dayCell.textContent = day;
+                    row.appendChild(dayCell);
+
+                    for (let hour = 8; hour < 18; hour++) {
+                        const startTime = `${hour}:00`;
+                        const endTime = `${hour + 1}:00`;
+                        const timeSlot = `${startTime} - ${endTime}`;  // E.g., "8:00 - 9:00"
+                        const cell = document.createElement('td');
+
+                        // Check if the slot is booked
+                        if (availability[day] && availability[day].includes(timeSlot)) {
+                            cell.innerHTML = '<span>N/A</span>';  // Booked slot
+                        } else {
+                            const checkbox = document.createElement('input');
+                            checkbox.type = 'checkbox';
+                            checkbox.name = 'timeslot';
+                            checkbox.value = `${day} ${timeSlot}`;
+                            cell.appendChild(checkbox);
+                        }
+
+                        row.appendChild(cell);
+                    }
+
+                    availabilityBody.appendChild(row);
+                });
+            }
         });
-    </script>
 
-    <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            text-align: center;
-            padding: 20px;
-            border: 1px solid black;
-        }
-        th {
-            background-color: #343a40;
-            color: white;
-        }
-        td.selected {
-            background-color: #007bff;
-            color: white;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-    </style>
+    </script>
 {% endblock %}

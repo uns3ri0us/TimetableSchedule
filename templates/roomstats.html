@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2 class="my-4">Room Usage Statistics</h2>
+
+    <div class="container">
+        <h4>Usage Percentage by Room</h4>
+        <canvas id="roomUsageChart" width="400" height="200"></canvas>
+        
+        <table class="table table-bordered mt-4">
+            <thead>
+                <tr>
+                    <th>Room</th>
+                    <th>Slot Count</th>
+                    <th>Usage Percentage (%)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stat in stats %}
+                <tr>
+                    <td>{{ stat.room }}</td>
+                    <td>{{ stat.count }}</td>
+                    <td>{{ stat.usage_percentage | round(2) }}</td>  <!-- Round for better readability -->
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        const data = {
+            labels: [{% for stat in stats %}'{{ stat.room }}',{% endfor %}],
+            datasets: [{
+                label: 'Usage Percentage',
+                data: [{% for stat in stats %}{{ stat.usage_percentage | round(2) }},{% endfor %}],
+                backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        };
+
+        const config = {
+            type: 'bar',
+            data: data,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Usage Percentage (%)'
+                        }
+                    }
+                }
+            }
+        };
+
+        const roomUsageChart = new Chart(
+            document.getElementById('roomUsageChart'),
+            config
+        );
+    </script>
+
+{% endblock %}
