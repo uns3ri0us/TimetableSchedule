@@ -8,7 +8,7 @@
             <label>Select Courses(CTRL select all required course):</label>
             <select multiple class="form-control" name="courses[]" required>
                 {% for course in available_courses %}
-                <option value="{{ course._id }}">{{ course.course_name }} ({{ course.course_code }})</option>
+                <option value="{{ course._id }}">{{ course.course_name }} ({{ course.course_code }}) ({{ course.department }})</option>
                 {% endfor %}
             </select>
         </div>

@@ -38,7 +38,7 @@
     </table>
 </div>
 
-<!-- Modal for Adding Course -->
+<!-- Add Course Modal -->
 <div class="modal fade" id="addCourseModal" tabindex="-1" role="dialog" aria-labelledby="addCourseModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -54,33 +54,44 @@
                         <label for="course_code">Course Code</label>
                         <input type="text" class="form-control" id="course_code" name="course_code" required>
                     </div>
+
                     <div class="form-group">
                         <label for="course_name">Course Name</label>
                         <input type="text" class="form-control" id="course_name" name="course_name" required>
                     </div>
+
+                    <!-- Department Selection -->
                     <div class="form-group">
-                        <label for="lecturer">Lecturer</label>
-                        <select class="form-control" id="lecturer" name="lecturer" required>
-                            {% for lecturer in lecturers %}
-                            <option value="{{ lecturer.username }}">{{ lecturer.username }}</option>
+                        <label for="department">Department</label>
+                        <select class="form-control" id="department" name="department" required>
+                            <option value="">Select a department</option>
+                            {% for department in departments %}
+                            <option value="{{ department }}">{{ department }}</option>
                             {% endfor %}
                         </select>
                     </div>
+
+                    <!-- Lecturer Selection -->
+                    <div class="form-group">
+                        <label for="lecturer">Lecturer</label>
+                        <select class="form-control" id="lecturer" name="lecturer" required>
+                            <option value="">Select a lecturer</option>
+                        </select>
+                    </div>
+
                     <div class="form-group">
                         <label for="credit_hours">Credit Hours</label>
                         <input type="number" class="form-control" id="credit_hours" name="credit_hours" required>
                     </div>
+
                     <div class="form-group">
                         <label for="lab_hours">Lab Hours (Optional)</label>
                         <input type="number" class="form-control" id="lab_hours" name="lab_hours">
                     </div>
+
                     <div class="form-group">
                         <label for="student_count">Student Count</label>
                         <input type="number" class="form-control" id="student_count" name="student_count">
-                    </div>
-                    <div class="form-group">
-                        <label for="department">Department</label>
-                        <input type="text" class="form-control" id="department" name="department">
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -92,4 +103,26 @@
     </div>
 </div>
 
+<script>
+    // JavaScript to dynamically filter lecturers based on selected department
+    const lecturers = {{ lecturers | tojson }};
+
+    document.getElementById('department').addEventListener('change', function () {
+        const selectedDepartment = this.value;
+
+        // Filter lecturers by selected department
+        const filteredLecturers = lecturers.filter(lecturer => lecturer.department === selectedDepartment);
+
+        // Populate the lecturer dropdown
+        const lecturerSelect = document.getElementById('lecturer');
+        lecturerSelect.innerHTML = '<option value="">Select a lecturer</option>';
+
+        filteredLecturers.forEach(lecturer => {
+            const option = document.createElement('option');
+            option.value = lecturer.username;
+            option.textContent = lecturer.username;
+            lecturerSelect.appendChild(option);
+        });
+    });
+</script>
 {% endblock %}

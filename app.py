@@ -171,13 +171,23 @@ def add_room():
 
 # Course management page (Admin only)
 @app.route('/courselist')
-def course_page():
-    if session.get('role') not in ['admin']:
-        return redirect(url_for('login'))
-    
-    courses = courses_collection.find()
-    lecturers = users_collection.find({'role': 'lecturer'})
-    return render_template('courses.html', courses=courses, lecturers=lecturers)
+def course_list():
+    # Fetch all courses from the collection
+    courses = list(courses_collection.find())
+
+    # Fetch distinct departments from the lecturer collection
+    departments = users_collection.distinct('department')
+
+    # Fetch all lecturers with their departments
+    lecturers = list(users_collection.find({}, {'username': 1, 'department': 1, '_id': 0}))
+
+    return render_template(
+        'courses.html', 
+        courses=courses, 
+        departments=departments, 
+        lecturers=lecturers
+    )
+
 
 # Route to add a new course (Admin only)
 @app.route('/add_course', methods=['POST'])
