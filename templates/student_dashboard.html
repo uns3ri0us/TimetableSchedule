@@ -1,0 +1,65 @@
+{% extends "student_base.html" %}
+
+{% block content %}
+    <h2 class="my-4">Timetable for {{ session['student_name'] }}</h2>
+
+    <div class="container">
+        <!-- Timetable Table -->
+        <table id="timetable" class="table table-bordered">
+            <thead>
+                <tr>
+                    <th></th>
+                    {% for hour in range(8, 19) %}
+                        <th>{{ hour }}:00</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] %}
+                <tr>
+                    <th>{{ day }}</th>
+                    {% for hour in range(8, 19) %}
+                        <td>
+                            {% set lecture_displayed = false %}
+                            {% for slot in timetable %}
+                                {% if slot.day == day %}
+                                    {% set start_time = slot.time.split(' - ')[0] %}
+                                    {% set start_hour = start_time.split(':')[0]|int %}
+                                    {% if start_hour == hour %}
+                                        {{ slot.course }} ({{ slot.room }}) ({{ slot.lecturer}})
+                                        {% set lecture_displayed = true %}
+                                    {% endif %}
+                                {% endif %}
+                            {% endfor %}
+                            {% if lecture_displayed %}
+                                <!-- Display empty if no lecture is found -->
+                                <span>No Lecture</span>
+                            {% endif %}
+                        </td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: center;
+            padding: 20px;
+            border: 1px solid black;
+        }
+        th {
+            background-color: #343a40;
+            color: white;
+        }
+        td.selected {
+            background-color: #28a745;
+            color: blue;
+        }
+    </style>
+{% endblock %}

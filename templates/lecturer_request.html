@@ -9,6 +9,22 @@
             <textarea id="reason" name="reason" class="form-control" rows="4" required></textarea>
         </div>
 
+        <!-- Select Slot Dropdown -->
+        <div class="form-group">
+            <label for="replace_slot">Select Slot to Replace:</label>
+            <select id="replace_slot" name="replace_slot" class="form-control" required>
+                <option value="">Select a slot</option>
+                {% for slot in slots %}
+                    <option value="{{ slot._id }}" data-details="{{ slot.course }} ({{ slot.room }}) ({{ slot.day }}) ({{ slot.time }})">
+                        {{ slot.course }} ({{ slot.room }}) ({{ slot.day }}) ({{ slot.time }})
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Hidden input to store concatenated slot details -->
+        <input type="hidden" id="slot_details" name="slot_details">
+
         <div class="form-group">
             <label for="venue">Preferred Venue:</label>
             <select id="venue" name="venue" class="form-control" required>
@@ -72,6 +88,13 @@
             const venueSelect = document.getElementById('venue');
             const dateField = document.getElementById('specificDate');
             const availabilityBody = document.getElementById('availabilityBody');
+            const replaceSlotSelect = document.getElementById('replace_slot');
+            const slotDetailsInput = document.getElementById('slot_details');
+
+            replaceSlotSelect.addEventListener('change', function () {
+                const selectedOption = replaceSlotSelect.options[replaceSlotSelect.selectedIndex];
+                slotDetailsInput.value = selectedOption.getAttribute('data-details') || '';
+            });
 
             // Check Availability on button click
             checkButton.addEventListener('click', function () {

@@ -29,13 +29,16 @@ __all__ = ['courses_collection', 'users_collection', 'rooms_collection', 'timeta
 def check_if_logged_in():
     # Define all endpoints that are restricted to certain users
     admin_endpoints = [
-        'admin_dashboard', 'room_page', 'course_page', 
-        'lecturer_page', 'generate_timetable', 'add_room', 
-        'add_course', 'admin_requests'
+        'generate_timetable', 'room_page', 'add_room', 'course_list',
+        'add_course', 'lecturer_page', 'admin_requests', 'accept_request',
+        'reject_request', 'room_stats', 'timetable_view', 'admin_dashboard'
     ]
     lecturer_endpoints = [
-        'lecturer_dashboard', 'lecturer_courses', 
-        'lecturer_timetable', 'request_replacement'
+        'lecturer_dashboard', 'lecturer_courses', 'lecturer_timetable', 
+        'request_replacement', 'check_availability'
+    ]
+    student_endpoints = [
+        'student_dashboard'
     ]
     
     # Ensure user is logged in for restricted pages
@@ -51,6 +54,10 @@ def check_if_logged_in():
         
         if request.endpoint in lecturer_endpoints and session.get('role') != 'lecturer':
             flash('Access denied. Lecturers only.')
+            return redirect(url_for('login'))
+        
+        if request.endpoint in student_endpoints and session.get('role') != 'student':
+            flash('Access denied. Students only.')
             return redirect(url_for('login'))
 
 # Route to login page
@@ -71,12 +78,17 @@ def login():
             # Store lecturer name in session if logged in user is a lecturer
             if user['role'] == 'lecturer':
                 session['lecturer_name'] = user['username']
+            if user['role'] == 'student':
+                session['student_name'] = user['username']
+                session['department'] = user['department']
 
             # Redirect based on role
             if user['role'] == 'admin':
                 return redirect(url_for('admin_dashboard'))
             elif user['role'] == 'lecturer':
                 return redirect(url_for('lecturer_dashboard'))
+            elif user['role'] == 'student':
+                return redirect(url_for('student_dashboard'))
         else:
             flash('Invalid credentials. Please try again.')
 
@@ -85,16 +97,30 @@ def login():
 # Route to admin dashboard (Admin only)
 @app.route('/admin')
 def admin_dashboard():
-    if session.get('role') != 'admin':
+    if 'user_id' not in session or session.get('role') != 'admin':
         return redirect(url_for('login'))
     return render_template('admin_dashboard.html')
 
 # Route to lecturer dashboard (Lecturer only)
 @app.route('/lecturer')
 def lecturer_dashboard():
-    if session.get('role') != 'lecturer':
+    if 'user_id' not in session or session.get('role') != 'lecturer':
         return redirect(url_for('login'))
     return render_template('lecturer_dashboard.html')
+
+# Route to student dashboard (Student only)
+@app.route('/student')
+def student_dashboard():
+    if 'user_id' not in session or session.get('role') != 'student':
+        return redirect(url_for('login'))
+    
+    student_name = session.get('username')
+    department = session.get('department')  # Get student's department from session
+    timetable = list(timetable_collection.find({"department": department}))  # Fetch timetable for the lecturer
+
+    # Print for debugging
+    print("Timetable Data:", timetable)
+    return render_template('student_dashboard.html', timetable=timetable)
 
 # Route to logout
 @app.route('/logout')
@@ -104,6 +130,9 @@ def logout():
 
 @app.route('/admintimetable', methods=['GET', 'POST'])
 def generate_timetable():
+    if 'user_id' not in session or session.get('role') != 'admin':
+        return redirect(url_for('login'))
+    
     if request.method == 'POST':
         # Get the selected courses from the form
         selected_course_ids = request.form.getlist('courses[]')
@@ -142,15 +171,16 @@ def generate_timetable():
 # Room management page (Admin only)
 @app.route('/adminrooms')
 def room_page():
-    if session.get('role') != 'admin':
+    if 'user_id' not in session or session.get('role') != 'admin':
         return redirect(url_for('login'))
+    
     rooms = rooms_collection.find()
     return render_template('rooms.html', rooms=rooms)
 
 # Route to add a new room (Admin only)
 @app.route('/add_room', methods=['POST'])
 def add_room():
-    if session.get('role') != 'admin':
+    if 'user_id' not in session or session.get('role') != 'admin':
         return redirect(url_for('login'))
 
     room_name = request.form.get('room_name')
@@ -172,6 +202,9 @@ def add_room():
 # Course management page (Admin only)
 @app.route('/courselist')
 def course_list():
+    if 'user_id' not in session or session.get('role') != 'admin':
+        return redirect(url_for('login'))
+    
     # Fetch all courses from the collection
     courses = list(courses_collection.find())
 
@@ -192,7 +225,7 @@ def course_list():
 # Route to add a new course (Admin only)
 @app.route('/add_course', methods=['POST'])
 def add_course():
-    if session.get('role') != 'admin':
+    if 'user_id' not in session or session.get('role') != 'admin':
         return redirect(url_for('login'))
 
     course_code = request.form.get('course_code')
@@ -222,39 +255,81 @@ def add_course():
 # Lecturer management page (Admin only)
 @app.route('/lecturerlist')
 def lecturer_page():
-    if session.get('role') != 'admin':
+    if 'user_id' not in session or session.get('role') != 'admin':
         return redirect(url_for('login'))
     
     lecturers = users_collection.find({'role': 'lecturer'})
     return render_template('lecturers.html', lecturers=lecturers)
 
-@app.route('/lecturercourse')
-def lecturer_courses():
-    # Ensure the user is logged in and is a lecturer
-    if 'user_id' not in session or session.get('role') != 'lecturer':
-        return redirect(url_for('login'))
-    
-    # Find the current lecturer's username (or ID)
-    lecturer_username = session.get('username')  # Assuming username is used to assign courses
-    
-    # Fetch courses assigned to the logged-in lecturer
-    courses = list(courses_collection.find({'lecturer': lecturer_username}))  # Convert cursor to list
-
-    return render_template('lecturer_course.html', courses=courses)
-
 @app.route('/request')
 def admin_requests():
-    # Ensure the user is logged in and is a lecturer
+    # Ensure the user is logged in and is an admin
     if 'user_id' not in session or session.get('role') != 'admin':
         return redirect(url_for('login'))
 
     # Retrieve all requests from the database
-    requests = list(request_collection.find())  # This will return an empty list if there are no requests
-    
+    requests = list(request_collection.find({'status' : 'pending'}))  # This will return an empty list if there are no requests
+
     return render_template('request.html', requests=requests)
+
+@app.route('/admin/accept_request/<request_id>', methods=['POST'])
+def accept_request(request_id):
+    if 'user_id' not in session or session.get('role') != 'admin':
+        return jsonify({"error": "Unauthorized"}), 403
+
+    # Retrieve the request
+    request = request_collection.find_one({"_id": ObjectId(request_id)})
+    if not request:
+        return jsonify({"error": "Request not found"}), 404
+
+    # Extract the requested slot and details
+    slot_details = request.get("timeslots")  # Example format: 'Wednesday 13:00 - 14:00'
+    slot_id = request.get("slot_id")
+    # Split slot_details into day and time components
+    if slot_details:
+        day, time_range = slot_details.split(' ', 1)  # Splits into day and time
+
+        # Update the timetable with the separated details
+        timetable_collection.update_one(
+            {"_id": ObjectId(slot_id)},
+            {"$set": {
+                "day": day,
+                "time": time_range,
+            }}
+        )
+
+    # Update the request's status to accepted
+    request_collection.update_one(
+        {"_id": ObjectId(request_id)},
+        {"$set": {"status": "Accepted"}}
+    )
+
+    return jsonify({"message": "Request accepted successfully!"}), 200
+
+@app.route('/admin/reject_request/<request_id>', methods=['POST'])
+def reject_request(request_id):
+    if 'user_id' not in session or session.get('role') != 'admin':
+        return jsonify({"error": "Unauthorized"}), 403
+
+    reject_reason = request.form.get("rejectReason")
+    
+    # Update the request's status to rejected and add rejection reason
+    request_collection.update_one(
+        {"_id": ObjectId(request_id)},
+        {"$set": {
+            "status": "Rejected",
+            "rejection_reason": reject_reason
+        }}
+    )
+
+    return jsonify({"message": "Request rejected successfully!"}), 200
+
 
 @app.route('/roomstats')
 def room_stats():
+    if 'user_id' not in session or session.get('role') != 'admin':
+        return redirect(url_for('login'))
+
     # Fetch all timetable entries
     timetable_entries = list(timetable_collection.find())
 
@@ -282,12 +357,59 @@ def room_stats():
 
     return render_template('roomstats.html', stats=stats)
 
+@app.route('/timetable_view')
+def timetable_view():
+    if 'user_id' not in session or session.get('role') != 'admin':
+        return redirect(url_for('login'))
 
+    # Fetch all lecturers, rooms, and departments from the database
+    lecturers = users_collection.find({'role':'lecturer'}, {'username': 1, '_id': 0})
+    rooms = timetable_collection.distinct('room')
+    departments = timetable_collection.distinct('department')
+
+    return render_template(
+        'timetableview.html',
+        lecturers=list(lecturers),
+        rooms=rooms,
+        departments=departments
+    )
+
+
+# Helper route to fetch timetable data dynamically
+@app.route('/get_timetable/<entity_type>/<entity_name>')
+def get_timetable(entity_type, entity_name):
+
+    query = {}
+    if entity_type == 'lecturer':
+        query = {'lecturer': entity_name}
+    elif entity_type == 'room':
+        query = {'room': entity_name}
+    elif entity_type == 'department':
+        query = {'department': entity_name}
+
+    # Find all relevant timetable entries
+    timetable_entries = timetable_collection.find(query)
+    
+    # Prepare data for JSON response
+    timetable_data = [
+        {
+            'day': entry['day'],
+            'time': entry['time'],
+            'course': entry['course'],
+            'room': entry['room']
+        }
+        for entry in timetable_entries
+    ]
+    
+    return jsonify(timetable_data)
 
 ############################################################# LECTURER SIDE ####################################
 
 @app.route('/lecturertimetable', methods=['GET'])
 def lecturer_timetable():
+    if 'user_id' not in session or session.get('role') != 'lecturer':
+        return redirect(url_for('login'))
+    
     lecturer_name = session.get('lecturer_name')  # Get lecturer's name from session
     timetable = list(timetable_collection.find({"lecturer": lecturer_name}))  # Fetch timetable for the lecturer
 
@@ -308,8 +430,26 @@ def generate_time_slots():
         start = next_slot
     return slots
 
+@app.route('/lecturercourse')
+def lecturer_courses():
+    # Ensure the user is logged in and is a lecturer
+    if 'user_id' not in session or session.get('role') != 'lecturer':
+        return redirect(url_for('login'))
+    
+    # Find the current lecturer's username (or ID)
+    lecturer_username = session.get('username')  # Assuming username is used to assign courses
+    
+    # Fetch courses assigned to the logged-in lecturer
+    courses = list(courses_collection.find({'lecturer': lecturer_username}))  # Convert cursor to list
+
+    return render_template('lecturer_course.html', courses=courses)
+
+
 @app.route('/check_availability')
 def check_availability():
+    if 'user_id' not in session or session.get('role') != 'lecturer':
+        return redirect(url_for('login'))
+
     venue = request.args.get('venue')
 
     # Fetch all timetable entries for the selected venue
@@ -331,18 +471,25 @@ def check_availability():
 
 @app.route('/lecturerrequest', methods=['GET', 'POST'])
 def request_replacement():
+    if 'user_id' not in session or session.get('role') != 'lecturer':
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
         lecturer_name = session.get('lecturer_name')
         reason = request.form['reason']
+        slot_id = request.form['replace_slot']
+        slot_details = request.form['slot_details']
         replacement_type = request.form['replacementType']
         specific_date = request.form.get('specificDate') if replacement_type == 'temporary' else None
         venue = request.form['venue']
-        timeslots = request.form.getlist('timeslot')
+        timeslots = request.form.get['timeslot']
 
         # Store the request data in the database
         request_data = {
             'lecturer_name': lecturer_name,
             'reason': reason,
+            'slot_id': slot_id,
+            'slot_details': slot_details,
             'replacement_type': replacement_type,
             'specific_date': specific_date,
             'venue': venue,
@@ -357,7 +504,10 @@ def request_replacement():
 
     rooms = list(mongo.db.rooms.find())  # Fetch available rooms
 
-    return render_template('lecturer_request.html', rooms=rooms)
+    lecturer = session.get('lecturer_name')
+    slots = timetable_collection.find({"lecturer": lecturer})  # Fetch slots to replace
+    
+    return render_template('lecturer_request.html', rooms=rooms, slots=slots)
 
 if __name__ == '__main__':
     app.run(debug=True)

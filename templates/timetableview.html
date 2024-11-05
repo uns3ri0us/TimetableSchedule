@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2 class="my-4">Admin Timetable Viewer</h2>
+
+    <div class="container">
+        <!-- Selection Filters -->
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <label for="lecturerSelect">Lecturer</label>
+                <select id="lecturerSelect" class="form-control">
+                    <option value="">Select Lecturer</option>
+                    {% for lecturer in lecturers %}
+                    <option value="{{ lecturer.username }}">{{ lecturer.username }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="roomSelect">Room</label>
+                <select id="roomSelect" class="form-control">
+                    <option value="">Select Room</option>
+                    {% for room in rooms %}
+                    <option value="{{ room }}">{{ room }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label for="departmentSelect">Department</label>
+                <select id="departmentSelect" class="form-control">
+                    <option value="">Select Department</option>
+                    {% for department in departments %}
+                    <option value="{{ department }}">{{ department }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Timetable Table -->
+        <table id="timetable" class="table table-bordered">
+            <thead>
+                <tr>
+                    <th></th>
+                    {% for hour in range(8, 19) %}
+                        <th>{{ hour }}:00</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'] %}
+                <tr>
+                    <th>{{ day }}</th>
+                    {% for hour in range(8, 19) %}
+                        <td data-day="{{ day }}" data-hour="{{ hour }}"></td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <style>
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            text-align: center;
+            padding: 20px;
+            border: 1px solid black;
+        }
+        th {
+            background-color: #343a40;
+            color: white;
+        }
+    </style>
+
+    <script>
+        // Fetch and display timetable data based on selection
+        function fetchTimetable(entityType, entityName) {
+            fetch(`/get_timetable/${entityType}/${entityName}`)
+                .then(response => response.json())
+                .then(data => displayTimetable(data))
+                .catch(error => console.error('Error fetching timetable:', error));
+        }
+
+        function displayTimetable(timetable) {
+            const tableCells = document.querySelectorAll('#timetable tbody td');
+            tableCells.forEach(cell => cell.innerHTML = '');  // Clear previous data
+
+            timetable.forEach(entry => {
+                const { day, time, course, room } = entry;
+                const startTime = parseInt(time.split(' - ')[0].split(':')[0]);
+                const cell = document.querySelector(`td[data-day="${day}"][data-hour="${startTime}"]`);
+                
+                if (cell) {
+                    cell.innerHTML = `${course} (${room})`;
+                }
+            });
+        }
+
+        // Event Listeners for selection changes
+        document.getElementById('lecturerSelect').addEventListener('change', function() {
+            const selectedLecturer = this.value;
+            if (selectedLecturer) {
+                fetchTimetable('lecturer', selectedLecturer);
+            }
+        });
+
+        document.getElementById('roomSelect').addEventListener('change', function() {
+            const selectedRoom = this.value;
+            if (selectedRoom) {
+                fetchTimetable('room', selectedRoom);
+            }
+        });
+
+        document.getElementById('departmentSelect').addEventListener('change', function() {
+            const selectedDepartment = this.value;
+            if (selectedDepartment) {
+                fetchTimetable('department', selectedDepartment);
+            }
+        });
+    </script>
+{% endblock %}

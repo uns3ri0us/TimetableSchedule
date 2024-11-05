@@ -16,6 +16,7 @@
                 <h5>Lecturer Name: {{ request.lecturer_name }}</h5>
                 <p><strong>Reason for Replacement:</strong> {{ request.reason }}</p>
                 <p><strong>Replacement Type:</strong> {{ request.replacement_type }}</p>
+                <p><strong>Desired Replacement Slot:</strong> {{ request.slot_details }}</p>
 
                 <!-- If the replacement is temporary, show the specific date -->
                 {% if request.replacement_type == 'temporary' %}
@@ -26,10 +27,8 @@
 
                 <!-- Display all requested timeslots -->
                 <p><strong>Desired Time Slots:</strong></p>
-                <ul>
-                    {% for slot in request.timeslots %}
-                        <li>{{ slot }}</li>
-                    {% endfor %}
+                <ul>                    
+                        <li>{{ request.timeslots }}</li>
                 </ul>
 
                 <p><strong>Status:</strong> {{ request.status }}</p>
@@ -70,14 +69,14 @@
 
     <!-- JavaScript for handling accept/reject actions -->
     <script>
+        // Accept request AJAX
         function acceptRequest(requestId) {
-            // Send accept request to the server via AJAX
             $.ajax({
                 url: '/admin/accept_request/' + requestId,
-                type: 'POST',
+                type: 'POST',  // Make sure this is 'POST'
                 success: function(response) {
                     alert('Request accepted successfully!');
-                    location.reload();  // Reload the page to reflect changes
+                    location.reload();
                 },
                 error: function(error) {
                     alert('Error accepting the request. Please try again.');
@@ -85,36 +84,35 @@
             });
         }
 
+        // Reject request AJAX
         function rejectRequest(requestId) {
-            // Store the request ID in the hidden input and show the modal
-            $('#requestId').val(requestId);
-            $('#rejectModal').modal('show');
-        }
+            $('#requestId').val(requestId);  // Set the request ID in the modal input
+            $('#rejectModal').modal('show');  // Show the modal
 
-        // Handle the submission of the reject form
-        $('#rejectForm').submit(function(event) {
-            event.preventDefault();
+            // Reject request AJAX
+            $('#rejectForm').submit(function(event) {
+                event.preventDefault();
 
-            var requestId = $('#requestId').val();
-            var rejectReason = $('#rejectReason').val();
+                var requestId = $('#requestId').val();
+                var rejectReason = $('#rejectReason').val();
 
-            // Send rejection request to the server via AJAX
-            $.ajax({
-                url: '/admin/reject_request/' + requestId,
-                type: 'POST',
-                data: {
-                    rejectReason: rejectReason
-                },
-                success: function(response) {
-                    alert('Request rejected successfully!');
-                    $('#rejectModal').modal('hide');
-                    location.reload();  // Reload the page to reflect changes
-                },
-                error: function(error) {
-                    alert('Error rejecting the request. Please try again.');
-                }
+                $.ajax({
+                    url: '/admin/reject_request/' + requestId,
+                    type: 'POST',
+                    data: {
+                        rejectReason: rejectReason
+                    },
+                    success: function(response) {
+                        alert('Request rejected successfully!');
+                        $('#rejectModal').modal('hide');
+                        location.reload();
+                    },
+                    error: function(error) {
+                        alert('Error rejecting the request. Please try again.');
+                    }
+                });
             });
-        });
+        }
     </script>
 
     <!-- CSS for Request Boxes -->
