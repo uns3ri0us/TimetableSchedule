@@ -285,24 +285,34 @@ def accept_request(request_id):
     # Extract the requested slot and details
     slot_details = request.get("timeslots")  # Example format: 'Wednesday 13:00 - 14:00'
     slot_id = request.get("slot_id")
-    # Split slot_details into day and time components
-    if slot_details:
-        day, time_range = slot_details.split(' ', 1)  # Splits into day and time
+    replacement_type = request.get("replacement_type")
 
-        # Update the timetable with the separated details
-        timetable_collection.update_one(
-            {"_id": ObjectId(slot_id)},
-            {"$set": {
-                "day": day,
-                "time": time_range,
-            }}
+    if replacement_type == "permanent":
+        # Split slot_details into day and time components
+        if slot_details:
+            day, time_range = slot_details.split(' ', 1)  # Splits into day and time
+
+            # Update the timetable with the separated details
+            timetable_collection.update_one(
+                {"_id": ObjectId(slot_id)},
+                {"$set": {
+                    "day": day,
+                    "time": time_range,
+                }}
+            )
+
+        # Update the request's status to accepted
+        request_collection.update_one(
+            {"_id": ObjectId(request_id)},
+            {"$set": {"status": "Accepted"}}
+        )
+    else:
+        # Update the request's status to accepted
+        request_collection.update_one(
+            {"_id": ObjectId(request_id)},
+            {"$set": {"status": "Accepted"}}
         )
 
-    # Update the request's status to accepted
-    request_collection.update_one(
-        {"_id": ObjectId(request_id)},
-        {"$set": {"status": "Accepted"}}
-    )
 
     return jsonify({"message": "Request accepted successfully!"}), 200
 
@@ -482,7 +492,7 @@ def request_replacement():
         replacement_type = request.form['replacementType']
         specific_date = request.form.get('specificDate') if replacement_type == 'temporary' else None
         venue = request.form['venue']
-        timeslots = request.form.get['timeslot']
+        timeslots = request.form.get('timeslot')
 
         # Store the request data in the database
         request_data = {
