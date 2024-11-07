@@ -212,7 +212,7 @@ def course_list():
     departments = users_collection.distinct('department')
 
     # Fetch all lecturers with their departments
-    lecturers = list(users_collection.find({}, {'username': 1, 'department': 1, '_id': 0}))
+    lecturers = list(users_collection.find({'role': 'lecturer'}, {'username': 1, 'department': 1, '_id': 0}))
 
     return render_template(
         'courses.html', 
@@ -250,7 +250,7 @@ def add_course():
     else:
         flash('All fields are required except for lab hours!')
 
-    return redirect(url_for('course_page'))
+    return redirect(url_for('course_list'))
 
 # Lecturer management page (Admin only)
 @app.route('/lecturerlist')
